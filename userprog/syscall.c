@@ -87,8 +87,13 @@ syscall_handler (struct intr_frame *f UNUSED)
 			thread_exit(-1);
 			return;
 		}
+	if (callno == SYS_REMOVE)
+		if(!is_valid_pointer(f->esp + 4, 1) || !is_valid_string( *(char **)(f->esp + 4))){
+			thread_exit(-1);
+			return;
+		}
 
-   	args[0] = (uint32_t)(*(usp+1));
+	args[0] = (uint32_t)(*(usp+1));
    	args[1] = (uint32_t)(*(usp+2));
    	args[2] = (uint32_t)(*(usp+3));
    	f->eax = syscall_tab[callno](args[0],args[1],args[2]);
@@ -199,6 +204,11 @@ bool sys_create (const char *file, unsigned initial_size){
     Removing an Open File, for details.
 */
 bool sys_remove (const char *file){
+	acquire_file_lock();
+	bool is_removed = filesys_remove(file);
+	release_file_lock();
+	
+	return is_removed;
 }
 
 /*    Opens the file called file. Returns a nonnegative integer handle
