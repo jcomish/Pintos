@@ -5,3 +5,5 @@ cscope.files
 cscope.out
 TAGS
 tags
+*.swp
+*.swo

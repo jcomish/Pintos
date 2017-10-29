@@ -90,12 +90,12 @@ start_process (void *childptr)
   /* If load failed, quit. */
   //  palloc_free_page (file_name);
   if (!success) 
-    thread_exit ();
+    thread_exit (-1);
 
   /* Set up stack. to put args on stack
      args in the child structure */
   if (!setup_stack (&if_.esp, child))
-      thread_exit();
+      thread_exit(-1);
 
   
   /* Start the user process by simulating a return from an
@@ -127,15 +127,17 @@ process_wait (tid_t child_tid UNUSED)
 
 /* Free the current process's resources. */
 void
-process_exit (void)
+process_exit (int status)
 {
-  struct thread *cur = thread_current ();
+  struct thread *current_thread = thread_current ();
   uint32_t *pd;
+
+  printf("%s: exit(%d)\n", current_thread->name, status);
 
   child_done = 1;
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
-  pd = cur->pagedir;
+  pd = current_thread->pagedir;
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set
@@ -145,7 +147,7 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
-      cur->pagedir = NULL;
+      current_thread->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }

@@ -71,6 +71,15 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
+
+struct lock file_lock;
+
+void acquire_file_lock(void){ lock_acquire(&file_lock);}
+
+void release_file_lock(void){ lock_release(&file_lock);}
+
+
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -87,6 +96,8 @@ static tid_t allocate_tid (void);
 void
 thread_init (void) 
 {
+  lock_init (&file_lock);
+
   ASSERT (intr_get_level () == INTR_OFF);
 
   lock_init (&tid_lock);
@@ -278,12 +289,12 @@ thread_tid (void)
 /* Deschedules the current thread and destroys it.  Never
    returns to the caller. */
 void
-thread_exit (void) 
+thread_exit (int status) 
 {
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
-  process_exit ();
+  process_exit (status);
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
@@ -422,7 +433,7 @@ kernel_thread (thread_func *function, void *aux)
 
   intr_enable ();       /* The scheduler runs with interrupts off. */
   function (aux);       /* Execute the thread function. */
-  thread_exit ();       /* If function() returns, kill the thread. */
+  thread_exit (-1);       /* If function() returns, kill the thread. */
 }
 
 /* Returns the running thread. */

@@ -3,6 +3,7 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "threads/vaddr.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -14,26 +15,91 @@ uint32_t syscall_nArgs[20];
 
 typedef uint32_t pid_t; 
 
+/***************************************************************************************
+*								  BEGIN CUSTOM FUNCTIONS
+***************************************************************************************/
+
+//changing get_user from manual to retun -1 if uaddr is not a virtual address (pg 27)
+static int get_user (const uint8_t *uaddr)
+{
+	if (!is_user_vaddr(uaddr))
+		return -1;
+	int result;
+	asm ("movl $1f, %0; movzbl %1, %0; 1:"
+		: "=&a" (result) : "m" (*uaddr));
+		return result;
+}
+
+//changing put_user to return false if udst is not a virtual address (pg 27)
+static bool put_user (uint8_t *udst, uint8_t byte)
+{
+	if (!is_iser_vaddr(udst))
+		return false;
+	int error_code;
+	asm ("movl $1f, %0; movb %b2, %1; 1:"
+		: "=&a" (error_code), "=m" (*udst) : "r" (byte));
+		return error_code != -1;
+}
+
+bool is_valid_pointer(void *ptr, int args)
+{
+    int i;
+    for (i = 0; i < (4 * args); i++) {
+		if (get_user(ptr + i) == -1)
+			return false;
+	}
+	return true;
+}
+
+bool is_valid_string(char *ptr)
+{
+	int c = 0;
+	for(ptr; get_user(ptr) != -1; ptr++)
+		if(get_user(ptr) == '\0')
+			return true;
+	
+	return false;
+}
+
+/********************************************************************************************
+*										END CUSTOM METHODS
+********************************************************************************************/
+
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
     //  printf ("system call!\n");
     //thread_exit ();
-    uint32_t callno, args[3], *usp = f->esp;
-    
+    uint32_t callno, args[3], *usp;
+	
+	//check if the stack pointer is valid
+	if (!is_valid_pointer(f->esp, 1)){
+		thread_exit(-1);
+		return;
+	}
 
-    callno = (uint32_t)(*usp);
-    args[0] = (uint32_t)(*(usp+1));
-    args[1] = (uint32_t)(*(usp+2));
-    args[2] = (uint32_t)(*(usp+3));
-    f->eax = syscall_tab[callno](args[0],args[1],args[2]);
+	usp= f->esp;
+	callno = (uint32_t)(*usp);
+
+    //Check for a bad pointer or null
+	if (callno == SYS_CREATE)
+		if(!is_valid_pointer(f->esp + 4, 2) || !is_valid_string( *(char **)(f->esp + 4))){
+			thread_exit(-1);
+			return;
+		}
+
+   	args[0] = (uint32_t)(*(usp+1));
+   	args[1] = (uint32_t)(*(usp+2));
+   	args[2] = (uint32_t)(*(usp+3));
+   	f->eax = syscall_tab[callno](args[0],args[1],args[2]);
+	
 }
 
 /*    Terminates Pintos by calling shutdown_power_off() (declared in
       "threads/init.h"). This should be seldom used, because you lose
       some information about possible deadlock situations, etc. */
 void sys_halt (void){
-
+	shutdown_power_off();
 }
 
 /*    Terminates the current user program, returning status to the
@@ -42,9 +108,7 @@ void sys_halt (void){
       0 indicates success and nonzero values indicate errors.
  */
 void sys_exit (int status){
-
-    printf("%s: exit(%d)\n",thread_name(),status);
-    thread_exit();
+    thread_exit(status);
 
 }
 
@@ -58,8 +122,9 @@ void sys_exit (int status){
       this.
  */
 
-pid_t sys_exec (const char *cmd_line){
-
+tid_t sys_exec (const char *cmd_line){
+	//tid_t pid = process_execute(cmd_line);
+	//return pid;
 }
 
 /*
@@ -120,6 +185,11 @@ int sys_wait (pid_t pid){
       operation which would require a open system call.
 */
 bool sys_create (const char *file, unsigned initial_size){
+	acquire_file_lock();
+	bool is_created = filesys_create(file, initial_size);
+	release_file_lock();
+	
+	return is_created;
 }
 
 /*
