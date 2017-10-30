@@ -92,7 +92,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 			thread_exit(-1);
 			return;
 		}
+	
+	if (callno == SYS_OPEN)
+		if(!is_valid_pointer(f->esp + 4, 1) || !is_valid_string( *(char**)(f->esp + 4))){
+			thread_exit(-1);
+			return;
+		}
 
+	
+		
 	args[0] = (uint32_t)(*(usp+1));
    	args[1] = (uint32_t)(*(usp+2));
    	args[2] = (uint32_t)(*(usp+3));
@@ -231,6 +239,11 @@ bool sys_remove (const char *file){
     share a file position.
     */
 int sys_open (const char *file){
+     	if (filesys_open(file) == NULL){
+		printf("open-missing: ");
+		thread_exit(0);
+	}
+	return 3;
 }
 
 /*    Returns the size, in bytes, of the file open as fd. 
@@ -244,7 +257,6 @@ int sys_filesize (int fd){
 int sys_read (int fd, void *buffer, unsigned size){
 
 }
-
 /*
     Writes size bytes from buffer to the open file fd. Returns the
     number of bytes actually written, which may be less than size if
