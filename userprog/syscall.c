@@ -240,8 +240,7 @@ bool sys_remove (const char *file){
     */
 int sys_open (const char *file){
      	if (filesys_open(file) == NULL){
-		printf("open-missing: ");
-		thread_exit(0);
+		return -1;
 	}
 	return 3;
 }
