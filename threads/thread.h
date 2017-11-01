@@ -4,7 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
-
+#include <filesys/file.h>
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -13,6 +13,12 @@ enum thread_status
     THREAD_BLOCKED,     /* Waiting for an event to trigger. */
     THREAD_DYING        /* About to be destroyed. */
   };
+
+struct fd_entry {
+	struct list_elem elem;
+	int fd;
+	struct file * file;
+};
 
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
@@ -100,6 +106,10 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+	
+    struct list_elem e;
+	
+    struct list fd_entry_list; 
   };
 
 /* If false (default), use round-robin scheduler.

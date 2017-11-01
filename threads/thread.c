@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <random.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <list.h>
 #include <string.h>
 #include "threads/flags.h"
 #include "threads/interrupt.h"
@@ -11,6 +13,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include <filesys/file.h>
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -103,12 +106,32 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+printf("number of times i am before the loop!!!!!!!");
+  list_init (&(initial_thread->fd_entry_list)); 
+/* Set default fd 0,1,2. 
+	int i;
+	for (i = 0; i < 3; i++){
+		printf("number of times i am in the loop. %d", i);
+	 	 struct fd_entry * fdEntry = (struct fd_entry *)malloc(sizeof(struct fd_entry));
+
+		 fdEntry->fd = i;
+		 fdEntry->file	= NULL; 
+
+		if (i == 0){
+			 list_push_front (&(initial_thread->fd_entry_list), &fdEntry->elem);
+		} else {
+			 list_push_back (&(initial_thread->fd_entry_list), &fdEntry->elem);
+		}
+	} 
+*/
+ 
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.

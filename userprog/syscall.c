@@ -1,5 +1,7 @@
 #include "userprog/syscall.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <list.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
@@ -14,7 +16,7 @@ syscall syscall_tab[20]; // for all syscalls possible
 uint32_t syscall_nArgs[20];
 
 typedef uint32_t pid_t; 
-
+ 
 /***************************************************************************************
 *								  BEGIN CUSTOM FUNCTIONS
 ***************************************************************************************/
@@ -239,10 +241,19 @@ bool sys_remove (const char *file){
     share a file position.
     */
 int sys_open (const char *file){
-     	if (filesys_open(file) == NULL){
+	struct file *returned_file;     	
+	if ((returned_file = filesys_open(file)) == NULL){
 		return -1;
 	}
-	return 3;
+	
+	struct thread * currentThread = thread_current();
+	int sizeOfList =(int) list_size(&(currentThread -> fd_entry_list));
+ 	struct fd_entry * fdEntry = (struct fd_entry *)malloc(sizeof(struct fd_entry));
+	 fdEntry->fd = sizeOfList+1;
+	 fdEntry->file	= returned_file; 
+
+	 list_push_back (&(currentThread->fd_entry_list), &fdEntry->elem);
+	return fdEntry->fd;
 }
 
 /*    Returns the size, in bytes, of the file open as fd. 
