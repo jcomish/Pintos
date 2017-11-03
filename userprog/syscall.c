@@ -102,6 +102,12 @@ syscall_handler (struct intr_frame *f UNUSED)
 			return;
 		}
 
+	if (callno == SYS_READ || callno == SYS_WRITE)
+		if(!is_valid_pointer(f->esp + 8, 1) || !is_valid_string( *(char**)(f->esp + 8))){
+			thread_exit(-1);
+			return;
+		}
+
 	
 		
 	args[0] = (uint32_t)(*(usp+1));
@@ -250,30 +256,56 @@ int sys_open (const char *file){
 	}
 	
 	struct thread * currentThread = thread_current();
-
 	int sizeOfList =(int) list_size(&(currentThread -> fd_entry_list));
- 
 	struct fd_entry * fdEntry = (struct fd_entry *)malloc(sizeof(struct fd_entry));
-//	memset(fdEntry, 0, sizeof *fdEntry);
- 	 
-	 fdEntry->fd = 3 + sizeOfList + 1;//to do: add the stdin, stdout, stderr
+         fdEntry->fd = sizeOfList + 3;
 	 fdEntry->file	= returned_file; 
 
 	 list_push_back (&(currentThread->fd_entry_list), &fdEntry->elem);
-	return fdEntry->fd;
+       	return fdEntry->fd;
 }
 
 /*    Returns the size, in bytes, of the file open as fd. 
  */
 int sys_filesize (int fd){
-
+	struct thread * currentThread = thread_current();
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
+	
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			int sizeInBytes = file_length(b->file);
+			return sizeInBytes;		
+		}
+	}
 }
 /*
     Reads size bytes from the file open as fd into buffer. Returns the number of bytes actually read (0 at end of file), or -1 if the file could not be read (due to a condition other than end of file). Fd 0 reads from the keyboard using input_getc(). 
 */
 int sys_read (int fd, void *buffer, unsigned size){
+	
+	if (fd==0){
+	    input_getc();
+	    return;
+	}
+	struct thread * currentThread = thread_current();
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
 
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			acquire_file_lock();
+			int bytes_read = file_read(b->file, buffer, size); 
+			release_file_lock();
+			return bytes_read;
+		}			
+	}
 }
+
 /*
     Writes size bytes from buffer to the open file fd. Returns the
     number of bytes actually written, which may be less than size if
@@ -296,7 +328,22 @@ int sys_write (int fd, const void *buffer, unsigned size){
 
     if (fd ==1){
 	putbuf(buffer,size);
+	return;
     }
+
+	struct thread * currentThread = thread_current();
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			acquire_file_lock();
+			int bytes_write = file_write(b->file, buffer, size);
+			release_file_lock();	
+			return bytes_write;	
+		}
+	}
 }
 
 
@@ -331,6 +378,24 @@ unsigned sys_tell (int fd){
     this function for each one.
 */
 void sys_close (int fd){
+//	printf("inside sys_close %d", fd);	
+	struct thread * currentThread = thread_current();
+	int sizeOfList =(int) list_size(&(currentThread -> fd_entry_list));
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			file_close(b->file); 
+		//	printf("before removing %d", sizeOfList);
+			list_remove(e);
+		//	thread_exit(0);
+		}			
+	}
+//	sizeOfList = (int) list_size(&(currentThread->fd_entry_list));
+//	printf("after removing %d", sizeOfList);
+//	thread_exit(0);
 }
 
 void
