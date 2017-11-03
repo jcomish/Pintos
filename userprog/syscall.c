@@ -247,8 +247,12 @@ int sys_open (const char *file){
 	}
 	
 	struct thread * currentThread = thread_current();
+
 	int sizeOfList =(int) list_size(&(currentThread -> fd_entry_list));
- 	struct fd_entry * fdEntry = (struct fd_entry *)malloc(sizeof(struct fd_entry));
+ 
+	struct fd_entry * fdEntry;
+	memset(fdEntry, 0, sizeof *fdEntry);
+
 	 fdEntry->fd = sizeOfList+1;
 	 fdEntry->file	= returned_file; 
 
