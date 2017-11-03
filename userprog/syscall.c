@@ -253,10 +253,10 @@ int sys_open (const char *file){
 
 	int sizeOfList =(int) list_size(&(currentThread -> fd_entry_list));
  
-	struct fd_entry * fdEntry;
-	memset(fdEntry, 0, sizeof *fdEntry);
-
-	 fdEntry->fd = sizeOfList+1;
+	struct fd_entry * fdEntry = (struct fd_entry *)malloc(sizeof(struct fd_entry));
+//	memset(fdEntry, 0, sizeof *fdEntry);
+ 	 
+	 fdEntry->fd = 3 + sizeOfList + 1;//to do: add the stdin, stdout, stderr
 	 fdEntry->file	= returned_file; 
 
 	 list_push_back (&(currentThread->fd_entry_list), &fdEntry->elem);

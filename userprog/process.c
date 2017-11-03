@@ -21,12 +21,13 @@
 // Each argv has a null-terminated string of characters
 typedef struct{
   char *name;
-  int len;
+  int len;	
 }args_t;
 
 typedef  struct  {
   int argc;
   args_t args[100];
+//  struct list * child_fd_list;
 } child_t;
 
 static thread_func start_process NO_RETURN;
@@ -61,7 +62,9 @@ process_execute (const char *cmd_string)
       	child.args[i].len = strlen(token);
   }
   child.argc = i;
- 
+ //
+ // struct thread * currentThread = thread_current();
+ // child.child_fd_list =&(currentThread->fd_entry_list);
 
   tid = thread_create (child.args[0].name, PRI_DEFAULT, start_process, &child);
   if (tid == TID_ERROR) {
@@ -88,13 +91,22 @@ start_process (void *childptr)
   if_.eflags = FLAG_IF | FLAG_MBS;
   // Load executable into memory
 
-
+   
   success = load (child->args[0].name, &if_.eip, &if_.esp);
 
+  struct thread * currentThread = thread_current();
+  list_init(&(currentThread->fd_entry_list)); 
   /* If load failed, quit. */
   //  palloc_free_page (file_name);
   if (!success) 
     thread_exit (-1);
+//
+// if (list_size (child->child_fd_list) == 0){
+//	list_init(&(currentThread->fd_entry_list));
+// 	printf("initialize fd table for child");
+//    } else {
+//	printf("I need to copy over fd table");
+//   }
 
   /* Set up stack. to put args on stack
      args in the child structure */

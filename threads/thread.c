@@ -114,6 +114,7 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 printf("number of times i am before the loop!!!!!!!");
+
   list_init (&(initial_thread->fd_entry_list)); 
 /* Set default fd 0,1,2. 
 	int i;

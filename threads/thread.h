@@ -8,7 +8,6 @@
 #include <filesys/file.h>
 #include "threads/synch.h"
 
->>>>>>> master
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -110,15 +109,9 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
-<<<<<<< HEAD
-	
-    struct list_elem e;
 	
     struct list fd_entry_list; 
   };
-=======
-};
->>>>>>> master
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
