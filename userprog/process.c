@@ -53,21 +53,23 @@ process_execute (const char *cmd_string)
   strlcpy (cmd_copy, cmd_string, PGSIZE);
 
   /* Parse cmd_string into args */
-  for(i=0; ;i++,cmd_string = NULL){
-      token = strtok_r(cmd_string, " ", &saveptr);
-      child.args[i].name = token;
-      if (token == NULL)
-          break;
-      child.args[i].len = strlen(token);
+  for(i=0; ;i++,cmd_copy = NULL){
+      token = strtok_r(cmd_copy, " ", &saveptr);
+		child.args[i].name = token;
+      	if (token == NULL)
+          	break;
+      	child.args[i].len = strlen(token);
   }
   child.argc = i;
  
 
-  /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (child.args[0].name, PRI_DEFAULT, start_process, &child);
-  if (tid == TID_ERROR)
+  if (tid == TID_ERROR) {
     palloc_free_page (cmd_copy); 
-  return tid;
+	return -1;
+  }
+
+	return tid;
 }
 
 /* A thread function that loads a user process and starts it
@@ -85,6 +87,8 @@ start_process (void *childptr)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   // Load executable into memory
+
+
   success = load (child->args[0].name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
@@ -250,6 +254,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
+
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();

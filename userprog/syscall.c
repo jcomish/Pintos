@@ -6,6 +6,7 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/init.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -89,7 +90,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			thread_exit(-1);
 			return;
 		}
-	if (callno == SYS_REMOVE)
+	if (callno == SYS_REMOVE || callno == SYS_EXEC)
 		if(!is_valid_pointer(f->esp + 4, 1) || !is_valid_string( *(char **)(f->esp + 4))){
 			thread_exit(-1);
 			return;
@@ -138,8 +139,8 @@ void sys_exit (int status){
  */
 
 tid_t sys_exec (const char *cmd_line){
-	//tid_t pid = process_execute(cmd_line);
-	//return pid;
+	tid_t tid = process_execute(cmd_line);
+	return tid;
 }
 
 /*
@@ -192,7 +193,9 @@ tid_t sys_exec (const char *cmd_line){
     any of the rest.
 */
 int sys_wait (pid_t pid){
+	return process_wait(pid);
 }
+
 
 /*    Creates a new file called file initially initial_size bytes in
       size. Returns true if successful, false otherwise. Creating a
