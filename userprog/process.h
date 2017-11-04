@@ -5,6 +5,7 @@
 
 tid_t process_execute (const char *file_name);
 int process_wait (tid_t);
+void process_exit_tid (int status, tid_t tid);
 void process_exit (int status);
 void process_activate (void);
 

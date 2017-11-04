@@ -146,6 +146,24 @@ void sys_exit (int status){
 
 tid_t sys_exec (const char *cmd_line){
 	tid_t tid = process_execute(cmd_line);
+
+	/*struct thread *ch = NULL;
+	struct thread *curr = thread_current();
+	struct list_elem *e;
+
+	for(e = list_begin(&curr->child_list); e != list_end(&curr->child_list); e = list_next(e))
+	{
+		struct thread *temp_ch = list_entry(e, struct thread, elem);
+		if(temp_ch->tid == tid)
+		{
+			ch = temp_ch;
+			break;
+		}
+	}
+
+	while(ch->exit_status == 0) {}*/
+
+
 	return tid;
 }
 

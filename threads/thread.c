@@ -220,6 +220,19 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  struct thread *ch = malloc(sizeof(struct thread));
+  ch->tid = tid;
+  strlcpy (ch->name, name, sizeof t->name);
+  ch->exit_status = -1;
+  ch->is_finished = false;
+  ch->about_to_die = malloc(sizeof(struct semaphore));
+  ch->can_die_now = malloc(sizeof(struct semaphore));
+  sema_init(ch->about_to_die, 0);
+  sema_init(ch->can_die_now, 0);
+
+
+  list_push_back(&thread_current()->child_list, &ch->elem);
+
   old_level = intr_disable ();
 
   /* Stack frame for kernel_thread(). */
@@ -465,7 +478,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit (-1);       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -509,6 +522,8 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
   
+  t->parent = running_thread();
+  list_init(&t->child_list);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -620,7 +635,7 @@ allocate_tid (void)
 
   return tid;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
