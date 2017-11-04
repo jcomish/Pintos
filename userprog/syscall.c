@@ -103,7 +103,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 
 	if (callno == SYS_READ || callno == SYS_WRITE)
-		if(!is_valid_pointer(f->esp + 8, 1) || !is_valid_string( *(char**)(f->esp + 8))){
+		if(!is_valid_pointer(f->esp + 4, 3) || !is_valid_string(*(char**)(f->esp+4))){
 			thread_exit(-1);
 			return;
 		}
