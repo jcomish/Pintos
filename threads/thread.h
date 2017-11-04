@@ -101,6 +101,14 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+  	//used for multithreading
+	struct thread *parent;              /* parent thread */
+	struct list child_list;
+	int exit_status;
+	bool is_finished;
+	struct semaphore *about_to_die;
+	struct semaphore *can_die_now;
 };
 
 /* If false (default), use round-robin scheduler.
