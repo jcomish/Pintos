@@ -27,8 +27,11 @@ typedef struct{
 typedef  struct  {
   int argc;
   args_t args[100];
+<<<<<<< HEAD
   struct semaphore *start_sema;
+=======
 //  struct list * child_fd_list;
+>>>>>>> d17cc8fe00d169e4016d04f80083a85c6de57857
 } child_t;
 
 static thread_func start_process NO_RETURN;
@@ -65,10 +68,15 @@ process_execute (const char *cmd_string)
       	child.args[i].len = strlen(token);
   }
   child.argc = i;
+<<<<<<< HEAD
   child.start_sema = start_sema;
+ 
+=======
  //
  // struct thread * currentThread = thread_current();
  // child.child_fd_list =&(currentThread->fd_entry_list);
+
+>>>>>>> d17cc8fe00d169e4016d04f80083a85c6de57857
   tid = thread_create (child.args[0].name, PRI_DEFAULT, start_process, &child);
   if (tid == TID_ERROR) {
     palloc_free_page (cmd_copy); 
@@ -95,14 +103,16 @@ start_process (void *childptr)
   if_.eflags = FLAG_IF | FLAG_MBS;
   // Load executable into memory
 
+<<<<<<< HEAD
   success = load (child->args[0].name, &if_.eip, &if_.esp);
   
+=======
    
   success = load (child->args[0].name, &if_.eip, &if_.esp);
 
   struct thread * currentThread = thread_current();
   list_init(&(currentThread->fd_entry_list)); 
-
+>>>>>>> d17cc8fe00d169e4016d04f80083a85c6de57857
   /* If load failed, quit. */
   //  palloc_free_page (file_name);
   if (!success) 
