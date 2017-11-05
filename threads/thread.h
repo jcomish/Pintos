@@ -114,6 +114,7 @@ struct thread
     struct thread *parent;              /* parent thread */
     struct list child_list;
     int exit_status;
+    bool load_status;
     bool is_finished;
     struct semaphore *about_to_die;
     struct semaphore *can_die_now;

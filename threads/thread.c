@@ -225,6 +225,7 @@ thread_create (const char *name, int priority,
   strlcpy (ch->name, name, sizeof t->name);
   ch->exit_status = -1;
   ch->is_finished = false;
+  ch->load_status = false;
   ch->about_to_die = malloc(sizeof(struct semaphore));
   ch->can_die_now = malloc(sizeof(struct semaphore));
   sema_init(ch->about_to_die, 0);

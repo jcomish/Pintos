@@ -103,10 +103,16 @@ syscall_handler (struct intr_frame *f UNUSED)
 		}
 
 	if (callno == SYS_READ || callno == SYS_WRITE)
-		if(!is_valid_pointer(f->esp + 4, 3) || !is_valid_string(*(char**)(f->esp+4))){
+		if(!is_valid_pointer(f->esp + 8, 1) || !is_valid_string( *(char**)(f->esp + 8))){
 			thread_exit(-1);
 			return;
 		}
+	if (callno == SYS_FILESIZE || callno == SYS_EXIT || callno == SYS_WAIT ||
+	    callno == SYS_TELL || callno == SYS_CLOSE)
+	   if(!is_valid_pointer(f->esp + 4, 1)){
+	   		thread_exit(-1);
+			return;
+	   }
 
 	
 		
