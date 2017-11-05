@@ -322,6 +322,7 @@ int sys_read (int fd, void *buffer, unsigned size){
 	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
 		b = list_entry (e, struct fd_entry, elem);
 		if (b->fd == fd){
+		//	int length = file_length(b->file);
 			acquire_file_lock();
 			int bytes_read = file_read(b->file, buffer, size); 
 			release_file_lock();
@@ -362,6 +363,10 @@ int sys_write (int fd, const void *buffer, unsigned size){
 	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
 		b = list_entry (e, struct fd_entry, elem);
 		if (b->fd == fd){
+		//	int length2 = file_length (b->file);
+		//	if (file_tell(b->file) == file_length(b->file)){
+		//		return 0;
+		//	}
 			acquire_file_lock();
 			int bytes_write = file_write(b->file, buffer, size);
 			release_file_lock();	
@@ -385,7 +390,17 @@ int sys_write (int fd, const void *buffer, unsigned size){
 */
 
 void sys_seek (int fd, unsigned position){
+	struct thread * currentThread = thread_current();
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
 
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			file_seek (b->file, position);	
+		}
+	}
 }
 
 /*
@@ -393,7 +408,18 @@ void sys_seek (int fd, unsigned position){
     open file fd, expressed in bytes from the beginning of the file.
 */
 unsigned sys_tell (int fd){
+	struct thread * currentThread = thread_current();
+	struct list * fd_list = &(currentThread->fd_entry_list);
+	struct list_elem *e;
+	struct fd_entry *b;
 
+	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
+		b = list_entry (e, struct fd_entry, elem);
+		if (b->fd == fd){
+			unsigned currentPosition = (unsigned) file_tell (b->file);	
+			return currentPosition;
+		}
+	}
 }
     
 /*
