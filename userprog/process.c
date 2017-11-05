@@ -75,7 +75,23 @@ process_execute (const char *cmd_string)
 	return -1;
   }
    //commenting this out until we fix exec bad file
-   // sema_down(child.start_sema);
+   struct thread *child_thread = NULL;
+   struct thread *curr = thread_current();
+   struct list_elem *e;
+   for(e = list_begin(&curr->child_list); e != list_end(&curr->child_list); e = list_next(e))
+   {
+     struct thread *temp_child = list_entry(e, struct thread, elem);
+     if(temp_child->tid == tid)
+     {
+       child_thread = temp_child;
+       break;
+     }
+   }
+   sema_down(child.start_sema);
+	
+	if(!child_thread->load_status){
+	  return -1;
+	}
 	return tid;
 }
 
@@ -96,24 +112,37 @@ start_process (void *childptr)
   // Load executable into memory
 
   success = load (child->args[0].name, &if_.eip, &if_.esp);
-  
-   
-  success = load (child->args[0].name, &if_.eip, &if_.esp);
+
 
   struct thread * currentThread = thread_current();
   list_init(&(currentThread->fd_entry_list)); 
 
   /* If load failed, quit. */
   //  palloc_free_page (file_name);
-  if (!success) 
+  //if (!success) {
+    tid_t tid = thread_tid();
+
+    struct thread *child_thread = NULL;
+	struct thread *current = thread_current()->parent;
+	struct list_elem *e;
+
+	for(e = list_begin(&current->child_list); e != list_end(&current->child_list); e = list_next(e))
+	{
+	  struct thread *temp_child = list_entry(e, struct thread, elem);
+	  if(temp_child->tid == tid)
+      {
+		child_thread = temp_child;
+		break;
+	  }
+	}
+
+	child_thread->load_status = success;
+
+    if (!success) {
+    sema_up(child->start_sema);
+
     thread_exit (-1);
-//
-// if (list_size (child->child_fd_list) == 0){
-//	list_init(&(currentThread->fd_entry_list));
-// 	printf("initialize fd table for child");
-//    } else {
-//	printf("I need to copy over fd table");
-//   }
+	}
 
   /* Set up stack. to put args on stack
      args in the child structure */
@@ -126,10 +155,26 @@ start_process (void *childptr)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
-  tid_t tid = thread_tid();
-  
+  //tid_t tid = thread_tid();
+ 
+  /*struct thread *child_thread = NULL;
+  struct thread *current = thread_current();
+  struct list_elem *e;
+
+  for(e = list_begin(&current->child_list); e != list_end(&current->child_list); e = list_next(e))
+  {
+    struct thread *temp_child = list_entry(e, struct thread, elem);
+    if(temp_child->tid == tid)
+    {
+      child_thread = temp_child;
+      break;
+    }
+  }
+  child_thread->load_status = success;*/
+
+
   //commenting this out until we fix exec bad file
-  //sema_up(child->start_sema);
+  sema_up(child->start_sema);
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -160,21 +205,18 @@ process_wait (tid_t child_tid UNUSED)
 		  break;
 	  }
   }
-	if (child == NULL)
-		thread_exit(-1);
-
-	if (child->is_finished)
+	if (child == NULL )
 		return -1;
 
-	else
-	{
-  	sema_down(child->about_to_die);
+	if (!child->is_finished)
+		sema_down(child->about_to_die);
+
   	int status = child->exit_status;
-    //This should be implemented, but it is breaking the tests.
+    list_remove(e);
+	//This should be implemented, but it is breaking the tests.
 	//The tests seem to be working fine without it. See line 211 in process_exit
     //sema_up(ch->can_die_now);
   	return status;
-	}
 }
 
 /* Free the current process's resources. */
