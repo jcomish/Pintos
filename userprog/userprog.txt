@@ -1,97 +1,156 @@
-		     +--------------------------+
-       	       	     |		EE461S		|
-		     | PROJECT 2: USER PROGRAMS	|
-		     | 	   DESIGN DOCUMENT     	|
-		     +--------------------------+
+PROJECT 3: USER PROGRAMS DESIGN DOCUMENT	
+11/4/2017
+
 ---- GROUP ----
->> Fill in the names and email addresses of your group members.
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
-FirstName LastName <email@domain.example>
+
+Joshua Comish <jcomish@utexas.edu>
+Andy Yang <andy.yang@utexas.edu>
+
 ---- PRELIMINARIES ----
->> If you have any preliminary comments on your submission, notes for the
->> TAs, or extra credit, please give them here.
->> Please cite any offline or online sources you consulted while
->> preparing your submission, other than the Pintos documentation, course
->> text, lecture notes, and course staff.
+ If you have any preliminary comments on your submission, notes for the TAs, or extra credit, please give them here.
+
+ Please cite any offline or online sources you consulted while preparing your submission, other than the Pintos documentation, course text, lecture notes, and course staff.
+
+Pintos linked-list example: https://github.com/jadudm/pintos-linked-list-example
+Much was given to us by Professor Yerraballi.  He walked us through argument passing and synchronization.
+We consulted with Ari Bruck, Tiffany Tillett, and Beth Richardson a bit when we got stuck.
+We reviewed the class recordings before beginning to review argument passing and refamiliarize ourselves with Pintos and GDB.  These are stored at https://drive.google.com/drive/u/1/folders/0B7NeT46ESFW-NUFFSC16bHktckk?ths=true
+We referenced the SKKU slides that are posted on Canvas.
+
 			   ARGUMENT PASSING
 			   ================
+
 ---- DATA STRUCTURES ----
->> A1: Copy here the declaration of each new or changed `struct' or
->> `struct' member, global or static variable, `typedef', or
->> enumeration.  Identify the purpose of each in 25 words or less.
+
+ A1: Copy here the declaration of each new or changed `struct' or `struct' member, global or static variable, `typedef', or enumeration.  Identify the purpose of each in 25 words or less.
+
+typedef struct{
+  char *name;
+  int len;  
+}args_t;
+This contains the arguments that we are actually going to execute.
+    
+typedef  struct  {
+  int argc;
+  args_t args[100];
+  struct semaphore *start_sema;
+} child_t;
+This is a container object for the arguments. We also added a semaphore for synchronization.
+
+
 ---- ALGORITHMS ----
->> A2: Briefly describe how you implemented argument parsing.  How do
->> you arrange for the elements of argv[] to be in the right order?
->> How do you avoid overflowing the stack page?
+
+ A2: Briefly describe how you implemented argument parsing.  How do you arrange for the elements of argv[] to be in the right order? How do you avoid overflowing the stack page?
+
+
+We followed the professor’s code.  All of the arguments are parsed into a data structure that keeps track of each argument, which is passed along to the execution of the process.  We ensure that they are in the correct order by tokenizing each of the elements and putting the elements into our custom data structure one at a time.  The order is retained by the data structure.  We avoid overflowing the stack page by: 1. Using palloc_get_page on each thread and 2. Mallocing our objects.
+
 ---- RATIONALE ----
->> A3: Why does Pintos implement strtok_r() but not strtok()?
+
+ A3: Why does Pintos implement strtok_r() but not strtok()?
+
+strtok_r() provides reentrant function for multiple threads calling the strtok_r() without interference from each other. strtok_r() saves the remaining string in a pointer specific to the calling thread rather than a static pointer in strtok().
+
+ A4: In Pintos, the kernel separates commands into a executable name and arguments.  In Unix-like systems, the shell does this separation.  Identify at least two advantages of the Unix approach.
+
+Validating the executable name and arguments separately is good for identifying the exact locations of the problems in a system call. 
+Identifying the right syscalls and passing in just the arguments are easier with this kind of separations.
 
 			     SYSTEM CALLS
 			     ============
+
 ---- DATA STRUCTURES ----
->> B1: Copy here the declaration of each new or changed `struct' or
->> `struct' member, global or static variable, `typedef', or
->> enumeration.  Identify the purpose of each in 25 words or less.
->> B2: Describe how file descriptors are associated with open files.
->> Are file descriptors unique within the entire OS or just within a
->> single process?
+
+ B1: Copy here the declaration of each new or changed `struct' or `struct' member, global or static variable, `typedef', or enumeration.  Identify the purpose of each in 25 words or less.
+
+
+struct fd_entry {
+	struct list_elem elem;
+	int fd;
+	struct file * file;
+};
+Defines a struct for each entry of file descriptor to file pointer mapping so that it can be placed into Pintos linked list. 
+
+struct thread
+  {
+    ...
+    struct list fd_entry_list; 
+  };
+Changed the struct thread to include struct list fd_entry_list member so that each thread will have its own file descriptor table. When a thread is running, fd_entry_list can be accessed by getting the current running thread. 
+
+ B2: Describe how file descriptors are associated with open files. Are file descriptors unique within the entire OS or just within a single process?
+
+Struct fd_entry contains two members: int fd, and struct file * file.  When a file is opened, the returned file pointer is stored with a file descriptor in the struct fd_entry. Each fd_entry is stored in a linked list fashion in Pintos list. File descriptors are only unique within a single process.
+
 ---- ALGORITHMS ----
->> B3: Describe your code for reading and writing user data from the
->> kernel.
->> B4: Suppose a system call causes a full page (4,096 bytes) of data
->> to be copied from user space into the kernel.  What is the least
->> and the greatest possible number of inspections of the page table
->> (e.g. calls to pagedir_get_page()) that might result?  What about
->> for a system call that only copies 2 bytes of data?  Is there room
->> for improvement in these numbers, and how much?
->> B5: Briefly describe your implementation of the "wait" system call
->> and how it interacts with process termination.
->> B6: Any access to user program memory at a user-specified address
->> can fail due to a bad pointer value.  Such accesses must cause the
->> process to be terminated.  System calls are fraught with such
->> accesses, e.g. a "write" system call requires reading the system
->> call number from the user stack, then each of the call's three
->> arguments, then an arbitrary amount of user memory, and any of
->> these can fail at any point.  This poses a design and
->> error-handling problem: how do you best avoid obscuring the primary
->> function of code in a morass of error-handling?  Furthermore, when
->> an error is detected, how do you ensure that all temporarily
->> allocated resources (locks, buffers, etc.) are freed?  In a few
->> paragraphs, describe the strategy or strategies you adopted for
->> managing these issues.  Give an example.
+
+ B3: Describe your code for reading and writing user data from the kernel.
+
+1.  Get current running thread by calling thread_current()
+2.  Retrieve the fd_entry_list from thread struct
+3.  Iterate through fd_entry_list and find the file pointer based on the given file descriptor 
+4.  Call file_read or file_write by passing in the file pointer
+
+ B4: Suppose a system call causes a full page (4,096 bytes) of data to be copied from user space into the kernel.  What is the least and the greatest possible number of inspections of the page table (e.g. calls to pagedir_get_page()) that might result?  What about for a system call that only copies 2 bytes of data?  Is there room for improvement in these numbers, and how much?
+
+
+In both scenarios, we think the least scenario is one and the greatest scenario is two.  Perhaps the addresses in the kernel memory may not be contiguous, and more than one call is required.  If this is the case, ensuring that memory is allocated in order would improve the performance by quite a bit.
+
+ B5: Briefly describe your implementation of the "wait" system call
+ and how it interacts with process termination.
+1. Find the stated thread object in the list.
+2. If there is none, exit
+3. If the child is not finished executing, call sema_down on a semaphore.  This will be unlocked by process_exit when it is finished.
+4. Remove the item from the child_list and return the status stored in the thread.
+
+ B6: Any access to user program memory at a user-specified address can fail due to a bad pointer value.  Such accesses must cause the process to be terminated.  System calls are fraught with such accesses, e.g. a "write" system call requires reading the system call number from the user stack, then each of the call's three arguments, then an arbitrary amount of user memory, and any of these can fail at any point.  This poses a design and error-handling problem: how do you best avoid obscuring the primary function of code in a morass of error-handling?  Furthermore, when an error is detected, how do you ensure that all temporarily allocated resources (locks, buffers, etc.) are freed?  In a few paragraphs, describe the strategy or strategies you adopted for managing these issues.  Give an example.
+
+We handle for bad pointer values by checking if a pointer is valid before we do anything with it.  If it is not, we will simply exit the thread with an error message. We found on page 27 and 28 of the Pintos manual that you can make this check by checking if the pointer points to a virtual address. When an error is detected, we are not currently attempting to free temporarily allocated resources, we only had enough time to get the tests to pass, not enough to clean up and optimize. 
+
 ---- SYNCHRONIZATION ----
->> B7: The "exec" system call returns -1 if loading the new executable
->> fails, so it cannot return before the new executable has completed
->> loading.  How does your code ensure this?  How is the load
->> success/failure status passed back to the thread that calls "exec"?
->> B8: Consider parent process P with child process C.  How do you
->> ensure proper synchronization and avoid race conditions when P
->> calls wait(C) before C exits?  After C exits?  How do you ensure
->> that all resources are freed in each case?  How about when P
->> terminates without waiting, before C exits?  After C exits?  Are
->> there any special cases?
+
+ B7: The "exec" system call returns -1 if loading the new executable fails, so it cannot return before the new executable has completed loading.  How does your code ensure this?  How is the load success/failure status passed back to the thread that calls "exec"?
+
+The load status is sent back to the parent thread by adding it to itself.  The parent thread can then access the thread status when needed.
+
+ B8: Consider parent process P with child process C.  How do you ensure proper synchronization and avoid race conditions when P calls wait(C) before C exits?  After C exits?  How do you ensure that all resources are freed in each case?  How about when P terminates without waiting, before C exits?  After C exits?  Are there any special cases?
+
+
+All of this is done with statuses in the objects and semaphores.  In the case where P reaches wait before C exits, we call sema_down on a semaphore that is in the child thread.  We then call sema_up in start_process when it is all finished. In the case that it is reached after, it simply returns the exit status that is in the child thread. This can be determined by an exit_status variable in the thread. We ensure that the resources are freed by removing the element in the list when exiting. We did not do anything special for the second stated case other than checking that there is actually something to wait for.
+
 ---- RATIONALE ----
->> B9: Why did you choose to implement access to user memory from the
->> kernel in the way that you did?
->> B10: What advantages or disadvantages can you see to your design
->> for file descriptors?
->> B11: The default tid_t to pid_t mapping is the identity mapping.
->> If you changed it, what advantages are there to your approach?
+
+ B9: Why did you choose to implement access to user memory from the kernel in the way that you did?
+
+We check to ensure that the memory is below PHYS_BASE.  This is the second suggestion given by the Pintos manual on page 27.  We chose this method because it looked to be about the same effort and the manual said it was faster.
+
+ B10: What advantages or disadvantages can you see to your design for file descriptors?
+
+Advantages: utilizing pintos list data structure for storing file descriptors mitigates a separate implementation of data structure thus reducing code base. File descriptors are incremented based on fd in the last element, and not based on the size of file descriptor table. 
+Disadvantages: finding a specific file descriptor to file pointer mapping require iterating through the entire list, which require O(n) time. 
+
+ B11: The default tid_t to pid_t mapping is the identity mapping. If you changed it, what advantages are there to your approach?
+
+We did not change it.
+
 			   SURVEY QUESTIONS
 			   ================
-Answering these questions is optional, but it will help us improve the
-course in future quarters.  Feel free to tell us anything you
-want--these questions are just to spur your thoughts.  You may also
-choose to respond anonymously in the course evaluations at the end of
-the quarter.
->> In your opinion, was this assignment, or any one of the three problems
->> in it, too easy or too hard?  Did it take too long or too little time?
->> Did you find that working on a particular part of the assignment gave
->> you greater insight into some aspect of OS design?
->> Is there some particular fact or hint we should give students in
->> future quarters to help them solve the problems?  Conversely, did you
->> find any of our guidance to be misleading?
->> Do you have any suggestions for the TAs to more effectively assist
->> students, either for future quarters or the remaining projects?
->> Any other comments?
+
+Answering these questions is optional, but it will help us improve the course in future quarters.  Feel free to tell us anything you want--these questions are just to spur your thoughts.  You may also choose to respond anonymously in the course evaluations at the end of the quarter.
+
+ In your opinion, was this assignment, or any one of the three problems in it, too easy or too hard?  Did it take too long or too little time?
+It was just as hard as we thought it would be.  It took a bit more time than we had available.
+
+ Did you find that working on a particular part of the assignment gave you greater insight into some aspect of OS design?
+I found that working with the exec methods gave me greater insight into OS design.  Being able to handle more than one exec at a time is a non-trivial process.  It also shed light on how powerful semaphores are.
+
+ Is there some particular fact or hint we should give students in future quarters to help them solve the problems?  Conversely, did you find any of our guidance to be misleading?
+
+Using a different variable while parsing on the provided code was a bit misleading.  I was assuming that the code was gold, and was stuck there for a considerable amount of time.  Things got a lot easier when the process of how synchronization was supposed to work.  I understand why it was not offered, but an explanation like that would have been very helpful in the beginning, at least for students working full-time.
+
+ Do you have any suggestions for the TAs to more effectively assist students, either for future quarters or the remaining projects?
+Some online office hours would be very nice.  There were times that I was 100% stuck, and I mostly just banged my head against the wall until I could get some help from my classmates.
+
+ Any other comments?
+None.
+
