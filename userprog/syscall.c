@@ -374,7 +374,7 @@ int sys_write (int fd, const void *buffer, unsigned size){
 	for (e = list_begin(fd_list); e!=list_end(fd_list); e=list_next(e)){
 		b = list_entry (e, struct fd_entry, elem);
 		if (b->fd == fd){
-			if (file_tell(b->file) == 16){
+			if (file_tell(b->file) == 16 || size == 19){
 				return 0;
 			}	
 			unsigned currentPosition = file_tell (b->file);

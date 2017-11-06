@@ -117,6 +117,17 @@ start_process (void *childptr)
   struct thread * currentThread = thread_current();
   list_init(&(currentThread->fd_entry_list)); 
 
+//  struct thread * parentThread = thread_current()->parent;
+//  struct list * p_fd_list = &(parentThread->fd_entry_list); 
+//  struct list_elem *fd_e;
+//  struct fd_entry *b;
+//  for (fd_e = list_begin(p_fd_list); fd_e != list_end(p_fd_list); fd_e=list_next(fd_e)){
+//	b = list_entry(fd_e, struct fd_entry, elem);
+//	list_push_back(&(currentThread->fd_entry_list), fd_e);
+//
+ //}
+
+//  if (child-args[0].name || child
   /* If load failed, quit. */
   //  palloc_free_page (file_name);
   //if (!success) {
